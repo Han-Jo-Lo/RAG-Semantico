@@ -1,7 +1,7 @@
 from load_doc import load_file
 from vector_store import VectorStoreManager
 import os
-<<<<<<< HEAD
+
 from langchain_openai.embeddings import OpenAIEmbeddings
 
 embedding=OpenAIEmbeddings(model='text-embedding-ada-002')
@@ -12,7 +12,7 @@ if not os.path.exists('./rappi'):
     print("Creando base de datos vectorial...")
     chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf',
     embedding_model=embedding)
-=======
+
 
 
 rappi_db=VectorStoreManager(persist_directory='./rappi')
@@ -21,7 +21,7 @@ rappi_db=VectorStoreManager(persist_directory='./rappi')
 if not os.path.exists('./rappi'):
     print("Creando base de datos vectorial...")
     chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf')
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
+
     rappi_db.create_or_update(chunked_doc)
 else:
     print("Base de datos detectada. Cargando...")

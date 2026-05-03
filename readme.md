@@ -1,26 +1,17 @@
-<<<<<<< HEAD
+
 # Implementacion de RAG con Chunking Semantico
 
 Este proyecto implementa un RAG con Chunking Semantico, en el cual se le carga un documento y en base a este documento se hacen preguntas para que el llm responda, se utiliza **SemanticChunker** para hacer los chunks de forma semantica y **Chromadb** como base de datos vectorial
-=======
-# Implementacion de RAG simple
-
-Este proyecto implementa un RAG simple, en el cual se le carga un documento y en base a este documento se hacen preguntas para que el llm responda, se utiliza **RecursiveCharacterTextSplitter** para hacer los chunks y **Chromadb** como base de datos vectorial
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
 
 ---
 
 ## 🚀 Flujo de Trabajo
 
 Las fases que intervienen en el proceso de son los siguientes:
-
-<<<<<<< HEAD
 - Cargar el documento PDF que se establezaca para hacer el chunk y guardarlo en la base de datos vectoria si la DB no esta creada
 - Chunking semantico del documento
-=======
 - Cargar el documento PDF que se establezca
 - Chunking del documento
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
 - Crear una base de datos vectorial si no esta creada
 - Guardar los chunk del documento en la base de datos vectorial
 - Crear la definicion del grafo para la ejecución de la logica del llm
@@ -34,11 +25,8 @@ Las fases que intervienen en el proceso de son los siguientes:
 
 - **Python 3.10.19**
 - **pypdf:** Carga de documentos
-<<<<<<< HEAD
 - **SemanticChunker:** Chunk de documentos
-=======
 - **RecursiveCharacterTextSplitter:** Chunk de documentos
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
 - **Chroma:** Bases de datos vectorial
 - **LangGraph & LangChain:** Orquestación de la lógica del LLM y manejo de estados
 
@@ -82,16 +70,10 @@ python graph.py
 
 ```python
 from langchain_community.document_loaders import PyPDFLoader
-<<<<<<< HEAD
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_core.embeddings import Embeddings# Clase de los embeddingd
 
 def load_file(file:str,embedding_model:Embeddings):# Se indica que el embedding_model es de tipo embedding, esto con el fin de pasarle el embedding completo al metodo
-=======
-from langchain_text_splitters.character import RecursiveCharacterTextSplitter
-
-def load_file(file:str):
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
     loader_pdf=PyPDFLoader(file)# Se instancia la clase con el nombre del archivo a cargar
     pages_pdf=loader_pdf.load()# Se carga el archivo
 
@@ -101,16 +83,11 @@ def load_file(file:str):
 ```
 
 ```python
-<<<<<<< HEAD
+
     splitter = SemanticChunker(
         embedding=embedding_model,# Para el chunking semantico se debe pasar el modelo del embedding
         breakpoint_threshold_type='percentile'
-=======
-    splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
-    )# Se instancia la clase
+
     pages_char_split=splitter.split_documents(pages_pdf)# Se hace el chunk sobre el documento
 
     return pages_char_split # Se retorna el documento con los chunks
@@ -134,15 +111,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class VectorStoreManager:
-<<<<<<< HEAD
     def __init__(self, embedding_model, persist_directory='./default_db'): # Se define el constructor de la clase
         """Inicializa el modelo de embeddings y la configuración de la base de datos."""
         self.embeddings = embedding_model
-=======
-    def __init__(self, model_name='text-embedding-ada-002', persist_directory='./default_db'): # Se crea el constructor
-        """Inicializa el modelo de embeddings y la configuración de la base de datos."""
-        self.embeddings = OpenAIEmbeddings(model=model_name)
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
         self.persist_directory = persist_directory
         self.vector_store = None
 ```
@@ -189,11 +160,7 @@ class VectorStoreManager:
     def switch_provider(self, provider: str):
         """Permite cambiar el motor de embeddings sobre la marcha."""
         if provider == "openai":
-<<<<<<< HEAD
             self.embeddings = OpenAIEmbeddings(model='text-embedding-ada-002')
-=======
-            self.embeddings = OpenAIEmbeddings()
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
         elif provider == "huggingface":
             from langchain_community.embeddings import HuggingFaceEmbeddings
             self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -211,27 +178,18 @@ Aca se gestiona todo
 from load_doc import load_file
 from vector_store import VectorStoreManager
 import os
-<<<<<<< HEAD
+
 from langchain_openai.embeddings import OpenAIEmbeddings
 
 embedding=OpenAIEmbeddings(model='text-embedding-ada-002') #Se define el modelo del embeddig
 
 appi_db=VectorStoreManager(persist_directory='./rappi',embedding_model=embedding)
-=======
-
-
-rappi_db=VectorStoreManager(persist_directory='./rappi')
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
 
 # 2. Solo cargamos el PDF si la base de datos NO existe todavía
 if not os.path.exists('./rappi'):
     print("Creando base de datos vectorial...")
-<<<<<<< HEAD
     chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf',
     embedding_model=embedding)# Se indica el nombre del documento, junto con el modelo del embedding
-=======
-    chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf')# Se indica el nombre del documento
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
     rappi_db.create_or_update(chunked_doc)# se crea la DB
 else:
     print("Base de datos detectada. Cargando...")
