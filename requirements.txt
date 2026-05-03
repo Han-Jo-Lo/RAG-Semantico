@@ -1,0 +1,12 @@
+langchain
+langchain_community
+langchain-openai
+langgraph
+python-dotenv
+pypdf
+<<<<<<< HEAD
+chromadb
+langchain_experimental
+=======
+chromadb
+>>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
