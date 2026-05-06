@@ -13,21 +13,6 @@ if not os.path.exists('./rappi'):
     chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf',
     embedding_model=embedding)
 
-
-
-rappi_db=VectorStoreManager(persist_directory='./rappi')
-
-# 2. Solo cargamos el PDF si la base de datos NO existe todavía
-if not os.path.exists('./rappi'):
-    print("Creando base de datos vectorial...")
-    chunked_doc = load_file('Términos y Condiciones de Uso de la Plataforma Rappi.pdf')
-
-    rappi_db.create_or_update(chunked_doc)
-else:
-    print("Base de datos detectada. Cargando...")
-    rappi_db.load()
-
-
 from langchain_openai import ChatOpenAI
 from typing import TypedDict,Annotated
 from langgraph.graph.message import add_messages
@@ -36,8 +21,6 @@ from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
 
 load_dotenv()
-
-
 
 llm=ChatOpenAI(
     model='gpt-4o-mini',
