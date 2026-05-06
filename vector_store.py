@@ -5,13 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class VectorStoreManager:
-<<<<<<< HEAD
     def __init__(self, embedding_model, persist_directory='./default_db'):
         self.embeddings = embedding_model
-=======
-    def __init__(self, model_name='text-embedding-ada-002', persist_directory='./default_db'):
-        self.embeddings = OpenAIEmbeddings(model=model_name)
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
         self.persist_directory = persist_directory
         self.vector_store = None
 
@@ -48,11 +43,7 @@ class VectorStoreManager:
 
     def switch_provider(self, provider: str):
         if provider == "openai":
-<<<<<<< HEAD
             self.embeddings = OpenAIEmbeddings(model='text-embedding-ada-002')
-=======
-            self.embeddings = OpenAIEmbeddings()
->>>>>>> 4b8892ae4b811e4845bd94d79656662a80b7b175
         elif provider == "huggingface":
             from langchain_community.embeddings import HuggingFaceEmbeddings
             self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
