@@ -11,9 +11,8 @@ def load_file(file:str,embedding_model:Embeddings):
         page.page_content = ' '.join(page.page_content.split())
         page.metadata["page_number"] = i
 
-
     splitter = SemanticChunker(
-        embedding=embedding_model,
+        embeddings=embedding_model,
         breakpoint_threshold_type='percentile'
     )
 
