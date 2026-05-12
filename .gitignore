@@ -4,3 +4,5 @@ __pycache__/
 venv/
 .env.*
 rappi
+db_folder/
+vector_stores/
