@@ -7,3 +7,4 @@ pypdf
 chromadb
 langchain_experimental
 streamlit
+langgraph-checkpoint-redis

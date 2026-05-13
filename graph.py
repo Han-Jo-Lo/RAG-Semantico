@@ -2,15 +2,17 @@ import os
 from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import  SystemMessage,RemoveMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
 load_dotenv()
 
 from config import DATABASE_DIRECTORY_NAME, get_embedding, get_llm, get_vectorstore
-from load_doc import load_file
 from vector_store import VectorStoreManager
+
+from langgraph.checkpoint.redis import RedisSaver
+from redis import Redis
 
 _PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_DOC = os.path.join(_PACKAGE_DIR, "rappi")
@@ -34,11 +36,7 @@ SYSTEM_INSTRUCTIONS = (
 class State(TypedDict):
     messages: Annotated[list, add_messages]
     retrieved_context: str
-
-
-def ask_question(state: State):
-    print("Cual es tu pregunta respecto a las politicas de Rappi?")
-    return {"messages": [HumanMessage(input())]}
+    summary:str
 
 
 def _make_context_node(store: VectorStoreManager):
@@ -54,16 +52,47 @@ def _make_context_node(store: VectorStoreManager):
 def chatbot_node(state: State):
     context = state["retrieved_context"]
     messages = state["messages"]
+    summary=state.get('summary','')
+    summary_context=f'Resumen de la conversacion previa: {summary}\n' if summary else ''
+
     prompt_msgs = [
         SystemMessage(
             content=(
                 f"{SYSTEM_INSTRUCTIONS}\n\n"
+                f'{summary_context}\n'
                 f"<CONTEXTO_RECUPERADO>\n{context}\n</CONTEXTO_RECUPERADO>"
             )
         )
     ] + messages
     response = llm.invoke(prompt_msgs)
     return {"messages": [response]}
+
+def summarize_memory(state: State):
+
+    messages = state["messages"]
+    summary = state.get("summary", "")
+
+    print(str(len(messages))+'--------')
+
+    if len(messages) < 10:
+        return {}
+
+    print('Haciendo resumen-------->')
+    prompt_msgs = [SystemMessage(content=(
+    f"resumen actual: {summary} \n\n"
+    f'Eres un sistema que hace resumen de una conversacion utilizando\n'
+    f'el resumen dado anteriormente y las conversaciones dadas a continuacion'
+    ))]+messages
+    
+    new_summary = llm.invoke(prompt_msgs)
+    print(new_summary.content)
+
+    messages_to_remove = [RemoveMessage(id=m.id) for m in messages[:-9]]
+
+    return {
+        "summary": new_summary.content,
+        "messages": messages_to_remove
+    }
 
 
 
@@ -72,10 +101,17 @@ def build_app_graph(vector_store: VectorStoreManager):
     builder = StateGraph(State)
     builder.add_node("context", context_node)
     builder.add_node("chatbot", chatbot_node)
+    builder.add_node("summarize", summarize_memory)
     builder.add_edge(START, "context")
     builder.add_edge("context", "chatbot")
-    builder.add_edge("chatbot", END)
-    return builder.compile()
+    builder.add_edge("chatbot", "summarize")
+    builder.add_edge("summarize", END)
+
+    client = Redis(host="localhost", port=6379, db=0)
+    saver = RedisSaver(redis_client=client)
+    saver.setup()
+
+    return builder.compile(checkpointer=saver)
 
 
 app_graph = build_app_graph(get_vectorstore())

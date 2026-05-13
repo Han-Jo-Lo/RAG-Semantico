@@ -178,6 +178,9 @@ else:
 
     if prompt := st.chat_input("Escribe tu pregunta…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
+
+        config={'configurable':{'thread_id':'usuario_rappi_hans_001'}}
+
         with st.chat_message("user"):
             st.markdown(prompt)
 
@@ -187,7 +190,8 @@ else:
                     {
                         "messages": [HumanMessage(content=prompt)],
                         "retrieved_context": "",
-                    }
+                    },
+                    config=config
                 )
                 answer = result["messages"][-1].content
             st.markdown(answer)
