@@ -72,12 +72,9 @@ def summarize_memory(state: State):
     messages = state["messages"]
     summary = state.get("summary", "")
 
-    print(str(len(messages))+'--------')
-
     if len(messages) < 10:
         return {}
 
-    print('Haciendo resumen-------->')
     prompt_msgs = [SystemMessage(content=(
     f"resumen actual: {summary} \n\n"
     f'Eres un sistema que hace resumen de una conversacion utilizando\n'
@@ -85,7 +82,7 @@ def summarize_memory(state: State):
     ))]+messages
     
     new_summary = llm.invoke(prompt_msgs)
-    print(new_summary.content)
+    
 
     messages_to_remove = [RemoveMessage(id=m.id) for m in messages[:-9]]
 

@@ -68,6 +68,16 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- IDENTIFICACIÓN DE USUARIO (NUEVA SECCIÓN) ---
+if "user_id" not in st.session_state:
+    try:
+        system_user = os.getlogin()
+    except:
+        import getpass
+        system_user = getpass.getuser()
+    st.session_state.user_id = f"sys_{system_user}"
+# ------------------------------------------------
+
 os.makedirs(VECTOR_STORES_ROOT, exist_ok=True)
 
 entries = list_vector_store_entries()
@@ -162,7 +172,7 @@ with st.sidebar:
             st.success("Base eliminada.")
             st.rerun()
 
-st.title("Asistente de políticas Rappi")
+st.title("Asistente de consulta de documentos")
 st.caption(
     "Respuestas con RAG sobre la base activa. Una sola app Python (Streamlit), sin API HTTP."
 )
@@ -179,21 +189,34 @@ else:
     if prompt := st.chat_input("Escribe tu pregunta…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
 
-        config={'configurable':{'thread_id':'usuario_rappi_hans_001'}}
+        config = {'configurable': {'thread_id': st.session_state.user_id}}
 
         with st.chat_message("user"):
             st.markdown(prompt)
 
+
         with st.chat_message("assistant"):
-            with st.spinner("Buscando contexto y generando respuesta…"):
-                result = graph.invoke(
-                    {
-                        "messages": [HumanMessage(content=prompt)],
-                        "retrieved_context": "",
-                    },
-                    config=config
-                )
-                answer = result["messages"][-1].content
-            st.markdown(answer)
+            placeholder = st.empty()
+            full_response = ""
+            token_counter = 0  # Definimos el contador fuera del for
+            
+            # Usamos stream_mode="messages" para obtener los tokens (chunks)
+            for msg, metadata in graph.stream(
+                {"messages": [HumanMessage(content=prompt)]},
+                config=config,
+                stream_mode="messages"
+            ):
+                # Filtro: Solo mensajes del chatbot y que tengan contenido
+                if metadata.get("langgraph_node") == "chatbot" and msg.content:
+                    full_response += msg.content
+                    token_counter += 1
+                    
+                    # Solo actualizamos el markdown cada 2 tokens
+                    if token_counter % 2 == 0:
+                        placeholder.markdown(full_response + "▌")
+            
+            # Forzamos la última actualización para asegurar que se vea el mensaje completo
+            placeholder.markdown(full_response)
+            answer = full_response
 
         st.session_state.messages.append({"role": "assistant", "content": answer})

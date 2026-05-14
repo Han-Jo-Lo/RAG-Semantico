@@ -70,4 +70,6 @@ def get_vectorstore_at(persist_directory: str) -> VectorStoreManager:
 
 @lru_cache(maxsize=1)
 def get_llm() -> ChatOpenAI:
-    return ChatOpenAI(model=LLM_MODEL_NAME, temperature=LLM_TEMPERATURE)
+    return ChatOpenAI(model=LLM_MODEL_NAME, 
+    temperature=LLM_TEMPERATURE,
+    streaming=True)
