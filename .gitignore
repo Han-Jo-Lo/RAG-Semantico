@@ -6,3 +6,4 @@ venv/
 rappi
 db_folder/
 vector_stores/
+gaps_conocimiento.db
