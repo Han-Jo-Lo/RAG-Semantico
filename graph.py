@@ -37,6 +37,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
     retrieved_context: str
     summary:str
+    no_answer:bool
 
 
 def _make_context_node(store: VectorStoreManager):
@@ -66,6 +67,11 @@ def chatbot_node(state: State):
     ] + messages
     response = llm.invoke(prompt_msgs)
     return {"messages": [response]}
+
+def unknown_answer(state:State):
+    last_message=state['messages'][-1].content
+    flag_question='Lo siento, no tengo esa información' in last_message
+    return {'no_answer':flag_question}
 
 def summarize_memory(state: State):
 
@@ -99,9 +105,12 @@ def build_app_graph(vector_store: VectorStoreManager):
     builder.add_node("context", context_node)
     builder.add_node("chatbot", chatbot_node)
     builder.add_node("summarize", summarize_memory)
+    builder.add_node('no_answer',unknown_answer)
+
     builder.add_edge(START, "context")
     builder.add_edge("context", "chatbot")
-    builder.add_edge("chatbot", "summarize")
+    builder.add_edge("chatbot", 'no_answer')
+    builder.add_edge('no_answer','summarize')
     builder.add_edge("summarize", END)
 
     client = Redis(host="localhost", port=6379, db=0)

@@ -1,6 +1,7 @@
 """
 Interfaz Streamlit: única capa (sin API). Gestión de bases Chroma y chat RAG.
 Ejecutar: streamlit run streamlit_app.py
+sudo docker start redis-stack
 """
 import os
 import shutil
@@ -21,6 +22,7 @@ from config import (
     list_vector_store_entries,
     sanitize_vector_db_name,
     vector_store_path_for_name,
+    get_sql
 )
 from graph import build_app_graph
 from load_doc import load_file
@@ -112,8 +114,27 @@ with st.sidebar:
             default_idx = options.index(paths_to_labels[st.session_state.active_db_path])
         choice = st.selectbox("Usar en conversación", options=options, index=default_idx)
         st.session_state.active_db_path = labels_to_path[choice]
+
+        st.write("---")
+            # En la barra lateral
+        sql_db=get_sql(choice)
+        datos_excel=sql_db.preparar_excel_descarga()
+
+        if datos_excel:
+            st.download_button(
+                label="📥 Descargar reporte de fallos",
+                data=datos_excel,
+                file_name=f"Gaps_{choice}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key=f"btn_descarga_{choice}_{len(datos_excel)}" # Truco de la KEY dinámica
+        )
+        else:
+            st.caption("✅ No hay preguntas fallidas.")
+
     else:
         st.session_state.active_db_path = None
+
+        
 
     st.divider()
     st.subheader("Crear base")
@@ -172,9 +193,11 @@ with st.sidebar:
             st.success("Base eliminada.")
             st.rerun()
 
+
+
 st.title("Asistente de consulta de documentos")
 st.caption(
-    "Respuestas con RAG sobre la base activa. Una sola app Python (Streamlit), sin API HTTP."
+    "Respuestas con RAG sobre la base activa."
 )
 
 if not st.session_state.active_db_path:
@@ -184,7 +207,7 @@ else:
         with st.chat_message(entry["role"]):
             st.markdown(entry["content"])
 
-    graph = app_graph_for_path(st.session_state.active_db_path)
+    graph = app_graph_for_path(entries[0][1])
 
     if prompt := st.chat_input("Escribe tu pregunta…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -218,5 +241,11 @@ else:
             # Forzamos la última actualización para asegurar que se vea el mensaje completo
             placeholder.markdown(full_response)
             answer = full_response
+
+            final_state=graph.get_state(config)
+            if final_state.values.get('no_answer'):
+                sql_db=get_sql(choice)
+                sql_db.registrar_pregunta(prompt,usuario=st.session_state.user_id)
+                
 
         st.session_state.messages.append({"role": "assistant", "content": answer})
