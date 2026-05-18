@@ -37,7 +37,7 @@ class SQLite_Manager:
                 # Filtramos usando el nombre correcto de la columna
                 query = "SELECT * FROM preguntas_fallidas WHERE base_datos_vectorial = ?"
                 df = pd.read_sql_query(query, conn, params=(self.base_datos_vectorial,))
-                
+                print(df)
                 if df.empty:
                     return None # Si no hay datos, devolvemos None para no mostrar el botón
 

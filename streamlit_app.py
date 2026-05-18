@@ -241,11 +241,13 @@ else:
             # Forzamos la última actualización para asegurar que se vea el mensaje completo
             placeholder.markdown(full_response)
             answer = full_response
+            st.session_state.messages.append({"role": "assistant", "content": answer})
 
             final_state=graph.get_state(config)
             if final_state.values.get('no_answer'):
                 sql_db=get_sql(choice)
                 sql_db.registrar_pregunta(prompt,usuario=st.session_state.user_id)
+                st.rerun()
                 
 
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+        
