@@ -1,10 +1,10 @@
 langchain
 langchain_community
+langchain-chroma
 langchain-openai
 langgraph
 python-dotenv
 pypdf
-chromadb
 langchain_experimental
 streamlit
 langgraph-checkpoint-redis
