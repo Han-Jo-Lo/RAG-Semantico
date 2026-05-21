@@ -14,8 +14,6 @@ from vector_store import VectorStoreManager
 from langgraph.checkpoint.redis import RedisSaver
 from redis import Redis
 
-_PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
-_DEFAULT_DOC = os.path.join(_PACKAGE_DIR, "rappi")
 
 embedding = get_embedding()
 _default_store = get_vectorstore()
@@ -75,27 +73,32 @@ def unknown_answer(state:State):
 
 def summarize_memory(state: State):
 
-    messages = state["messages"]
-    summary = state.get("summary", "")
+        messages = state["messages"]
+        summary = state.get("summary", "")
 
-    if len(messages) < 10:
-        return {}
+        if len(messages) < 10:
+            return {}
 
-    prompt_msgs = [SystemMessage(content=(
-    f"resumen actual: {summary} \n\n"
-    f'Eres un sistema que hace resumen de una conversacion utilizando\n'
-    f'el resumen dado anteriormente y las conversaciones dadas a continuacion'
-    ))]+messages
-    
-    new_summary = llm.invoke(prompt_msgs)
-    
+        prompt_msgs = [SystemMessage(content=(
+        f"resumen actual: {summary} \n\n"
+        f'Eres un sistema que hace resumen de una conversacion utilizando\n'
+        f'el resumen dado anteriormente y las conversaciones dadas a continuacion'
+        ))]+messages
+        
+        new_summary = llm.invoke(prompt_msgs)
+        
 
-    messages_to_remove = [RemoveMessage(id=m.id) for m in messages[:-9]]
+        messages_to_remove = [RemoveMessage(id=m.id) for m in messages[:-6] if m.id]
 
-    return {
-        "summary": new_summary.content,
-        "messages": messages_to_remove
-    }
+        return {
+            "summary": new_summary.content,
+            "messages": messages_to_remove
+        }
+
+def should_summarize(state: State):
+    if len(state["messages"]) >= 10:
+        return "summarize"
+    return END
 
 
 
@@ -104,13 +107,20 @@ def build_app_graph(vector_store: VectorStoreManager):
     builder = StateGraph(State)
     builder.add_node("context", context_node)
     builder.add_node("chatbot", chatbot_node)
-    builder.add_node("summarize", summarize_memory)
     builder.add_node('no_answer',unknown_answer)
+    builder.add_node("summarize", summarize_memory)
 
     builder.add_edge(START, "context")
     builder.add_edge("context", "chatbot")
     builder.add_edge("chatbot", 'no_answer')
-    builder.add_edge('no_answer','summarize')
+    builder.add_conditional_edges(
+        'no_answer',
+        should_summarize,
+        {
+            'summarize':'summarize',
+            END:END
+        }
+    )
     builder.add_edge("summarize", END)
 
     client = Redis(host="localhost", port=6379, db=0)
