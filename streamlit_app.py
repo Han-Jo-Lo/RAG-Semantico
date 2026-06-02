@@ -13,7 +13,7 @@ if _pkg not in sys.path:
     sys.path.insert(0, _pkg)
 
 import streamlit as st
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage,AIMessage
 
 from config import (
     VECTOR_STORES_ROOT,
@@ -207,7 +207,7 @@ else:
         with st.chat_message(entry["role"]):
             st.markdown(entry["content"])
 
-    graph = app_graph_for_path(entries[0][1])
+    graph = app_graph_for_path(st.session_state.active_db_path)
 
     if prompt := st.chat_input("Escribe tu pregunta…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
@@ -229,12 +229,11 @@ else:
                 config=config,
                 stream_mode="messages"
             ):
-                # Filtro: Solo mensajes del chatbot y que tengan contenido
-                if metadata.get("langgraph_node") == "chatbot" and msg.content:
+                node = metadata.get("langgraph_node")
+                # ✅ Capturar ambos nodos que generan respuesta al usuario
+                if node in ("chatbot", "no_answer") and msg.content:
                     full_response += msg.content
                     token_counter += 1
-                    
-                    # Solo actualizamos el markdown cada 2 tokens
                     if token_counter % 2 == 0:
                         placeholder.markdown(full_response + "▌")
             
@@ -243,11 +242,12 @@ else:
             answer = full_response
             st.session_state.messages.append({"role": "assistant", "content": answer})
 
-            final_state=graph.get_state(config)
-            if final_state.values.get('no_answer'):
-                sql_db=get_sql(choice)
-                sql_db.registrar_pregunta(prompt,usuario=st.session_state.user_id)
-                st.rerun()
-                
+        final_state = graph.get_state(config)
+        if not final_state.values.get('valid_answer'):
+            active_label = paths_to_labels.get(st.session_state.active_db_path)
+            if active_label:
+                sql_db = get_sql(active_label)
+                sql_db.registrar_pregunta(prompt, usuario=st.session_state.user_id)
+        st.rerun()
 
         

@@ -5,6 +5,8 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from vector_store import VectorStoreManager
 from langchain_openai import ChatOpenAI
 from database_sql import SQLite_Manager
+from redis import Redis
+from langgraph.checkpoint.redis import RedisSaver
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 _raw_db = os.getenv("DATABASE_DIRECTORY", "./db_folder")
@@ -48,7 +50,7 @@ def list_vector_store_entries() -> list[tuple[str, str]]:
         entries.insert(0, (f"{label} (legacy)", legacy))
     return entries
 
-EMBEDDING_MODEL_NAME=os.getenv('EMBEDDING_MODEL','text-embedding-3-small')
+EMBEDDING_MODEL_NAME=os.getenv('EMBEDDING_MODEL','text-embedding-ada-002')
 LLM_MODEL_NAME=os.getenv('LLM_MODEL','gpt-4o-mini')
 LLM_TEMPERATURE=float(os.getenv('LLM_TEMPERATURE','0'))
 SQLITE_DATABASE_NAME=os.getenv('SQLITE_NAME','gaps_conocimiento.db')
@@ -80,3 +82,10 @@ def get_llm() -> ChatOpenAI:
 def get_sql(vector_database_name)->SQLite_Manager:
     return SQLite_Manager(base_datos_vectorial=vector_database_name
     ,sql_db_name=SQLITE_DATABASE_NAME)
+
+@lru_cache(maxsize=1)
+def get_redis_saver() -> RedisSaver:
+    client = Redis(host="localhost", port=6379, db=0)
+    saver = RedisSaver(redis_client=client)
+    saver.setup()
+    return saver
