@@ -2,7 +2,7 @@ import os
 from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
-from langchain_core.messages import  SystemMessage,RemoveMessage,AIMessage
+from langchain_core.messages import  SystemMessage,RemoveMessage,AIMessage,HumanMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
@@ -36,9 +36,57 @@ class State(TypedDict):
 
 def build_app_graph(vector_store: VectorStoreManager):
 
+    def summary_request_router(state:State):
+        messages = state["messages"]
+
+        
+        if len(messages) <= 1:
+            return "reformulate"
+
+        
+
+        system = """Eres un router. Analiza el mensaje y responde 
+                    ÚNICAMENTE con una palabra:
+                    "SUMMARY" si pregunta sobre resumen"""
+            
+
+        response = llm.invoke([
+            SystemMessage(content=system),
+            HumanMessage(content=state["messages"][-1].content)
+        ],max_tokens=10)
+        
+        route = response.content.strip().upper()
+        if route not in ["SUMMARY"]:
+            route = "REFORMULATE"
+
+        return route
+
+    def summary_request_node(state:State):
+        messages = state["messages"]
+        summary = state.get("summary", "")
+        summary_context = f"Resumen previo:\n{summary}\n\n" if summary else ""
+
+        prompt = [
+        SystemMessage(content=(
+            f"{summary_context}"
+            "Dado el contexto de resumen previo y el historial"
+            'de mensajes a continuacion tu unico objetivo es realizar un resumen'
+        ))
+
+        ] + messages
+
+        response=llm.invoke(prompt)
+        return{'messages':[response]}
+
+
+
     def reformulate_node(state: State):
         messages = state["messages"]
         summary = state.get("summary", "")
+
+        
+        if len(messages) <= 1:
+            return {"standalone_question": messages[-1].content}
 
         
         if len(messages) <= 1:
@@ -160,13 +208,24 @@ def build_app_graph(vector_store: VectorStoreManager):
 
     
     builder = StateGraph(State)
+    builder.add_node('summary',summary_request_node)
     builder.add_node("reformulate", reformulate_node)
     builder.add_node("context", context_node)
     builder.add_node("chatbot", chatbot_node)
     builder.add_node("summarize", summarize_memory)
     builder.add_node('no_answer',unknown_answer)
 
-    builder.add_edge(START, "reformulate")
+
+    builder.add_conditional_edges(
+        source=START,
+        path=summary_request_router,
+        path_map={
+            'SUMMARY':'summary',
+            'REFORMULATE':'reformulate'
+        }
+    ) 
+
+    
     builder.add_edge("reformulate", "context")
 
     builder.add_conditional_edges(
@@ -189,6 +248,7 @@ def build_app_graph(vector_store: VectorStoreManager):
         }
     )
     builder.add_edge("summarize", END)
+    builder.add_edge('summary', END)
 
 
     return builder.compile(checkpointer=get_redis_saver())

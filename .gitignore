@@ -3,7 +3,6 @@ __pycache__/
 .env
 venv/
 .env.*
-rappi
 db_folder/
 vector_stores/
 gaps_conocimiento.db

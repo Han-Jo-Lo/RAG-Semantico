@@ -1,5 +1,5 @@
 @echo off
-title Asistente de Consulta RAG - Rappi
+title Asistente de Consulta RAG Semantico
 cls
 
 echo =========================================

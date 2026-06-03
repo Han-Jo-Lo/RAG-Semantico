@@ -65,7 +65,7 @@ def _invalidate_caches() -> None:
 
 
 st.set_page_config(
-    page_title="RAG Rappi",
+    page_title="RAG Semántico",
     page_icon="💬",
     layout="wide",
 )
@@ -231,7 +231,7 @@ else:
             ):
                 node = metadata.get("langgraph_node")
                 # ✅ Capturar ambos nodos que generan respuesta al usuario
-                if node in ("chatbot", "no_answer") and msg.content:
+                if node in ("chatbot", "no_answer",'summary') and msg.content:
                     full_response += msg.content
                     token_counter += 1
                     if token_counter % 2 == 0:
